@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,8 +30,13 @@ fun DashboardScreen(
     val lowStock by productViewModel.lowStockProducts.collectAsStateWithLifecycle()
     val todayTotal by saleViewModel.todaySalesTotal.collectAsStateWithLifecycle()
     val todaySales by saleViewModel.todaySales.collectAsStateWithLifecycle()
+    val previousDays by saleViewModel.previousDaysSummaries.collectAsStateWithLifecycle()
+    val dateSearchQuery by saleViewModel.dateSearchQuery.collectAsStateWithLifecycle()
 
     val currencyFormat = NumberFormat.getNumberInstance(Locale.FRANCE)
+    val todayDateLabel = remember {
+        java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date())
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -43,6 +49,14 @@ fun DashboardScreen(
                 "Tableau de bord",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        item {
+            Text(
+                "Aujourd'hui, $todayDateLabel",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -90,6 +104,38 @@ fun DashboardScreen(
                 LowStockItem(product)
             }
         }
+
+        item {
+            Text(
+                "Performances des jours précédents",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        item {
+            OutlinedTextField(
+                value = dateSearchQuery,
+                onValueChange = { saleViewModel.setDateSearchQuery(it) },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Rechercher une date (ex: 12/08/2026)") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true
+            )
+        }
+
+        if (previousDays.isEmpty()) {
+            item {
+                Text(
+                    "Aucune donnée pour le moment",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            items(previousDays) { summary ->
+                DailySummaryItem(summary, currencyFormat)
+            }
+        }
     }
 }
 
@@ -104,6 +150,38 @@ private fun StatCard(title: String, value: String, modifier: Modifier = Modifier
     }
 }
 
+@Composable
+private fun DailySummaryItem(summary: com.quincaillerie.gestion.data.DailySummary, currencyFormat: NumberFormat) {
+    val displayDate = remember(summary.day) {
+        try {
+            val parser = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val display = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            display.format(parser.parse(summary.day) ?: summary.day)
+        } catch (e: Exception) {
+            summary.day
+        }
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(displayDate, fontWeight = FontWeight.Bold)
+            Column(horizontalAlignment = Alignment.End) {
+                Text("${currencyFormat.format(summary.totalSales)} FCFA", fontWeight = FontWeight.Bold)
+                Text(
+                    "${summary.transactionCount} transaction${if (summary.transactionCount > 1) "s" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
 @Composable
 private fun LowStockItem(product: Product) {
     Card(

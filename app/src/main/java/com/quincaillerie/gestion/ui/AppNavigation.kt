@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,9 +15,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
 import com.quincaillerie.gestion.ui.screens.DashboardScreen
 import com.quincaillerie.gestion.ui.screens.ProductListScreen
 import com.quincaillerie.gestion.ui.screens.SaleScreen
+import com.quincaillerie.gestion.ui.screens.SoldProductsScreen
 import com.quincaillerie.gestion.viewmodel.ProductViewModel
 import com.quincaillerie.gestion.viewmodel.SaleViewModel
 
@@ -24,6 +27,7 @@ sealed class Screen(val route: String, val label: String) {
     object Dashboard : Screen("dashboard", "Accueil")
     object Products : Screen("products", "Produits")
     object Sale : Screen("sale", "Vente")
+    object SoldProducts : Screen("sold_products", "Vendus")
 }
 
 @Composable
@@ -32,7 +36,7 @@ fun AppNavigation(
     saleViewModel: SaleViewModel
 ) {
     val navController = rememberNavController()
-    val items = listOf(Screen.Dashboard, Screen.Products, Screen.Sale)
+    val items = listOf(Screen.Dashboard, Screen.Products, Screen.Sale, Screen.SoldProducts)
 
     Scaffold(
         bottomBar = {
@@ -45,6 +49,7 @@ fun AppNavigation(
                         Screen.Dashboard -> Icons.Default.Home
                         Screen.Products -> Icons.Default.Inventory
                         Screen.Sale -> Icons.Default.ShoppingCart
+                        Screen.SoldProducts -> Icons.Default.BarChart
                     }
                     NavigationBarItem(
                         icon = { Icon(icon, contentDescription = screen.label) },
@@ -67,7 +72,7 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = Screen.Dashboard.route,
-            modifier = androidx.compose.ui.Modifier.padding(padding)
+            modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(productViewModel, saleViewModel)
@@ -77,6 +82,9 @@ fun AppNavigation(
             }
             composable(Screen.Sale.route) {
                 SaleScreen(productViewModel, saleViewModel)
+            }
+            composable(Screen.SoldProducts.route) {
+                SoldProductsScreen(saleViewModel)
             }
         }
     }

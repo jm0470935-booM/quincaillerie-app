@@ -39,6 +39,43 @@ class SaleViewModel(
     val todaySales: StateFlow<List<Sale>> = saleDao.getSalesSince(startOfToday())
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val allDailySummaries: StateFlow<List<DailySummary>> = saleDao.getDailySummaries()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _dateSearchQuery = MutableStateFlow("")
+    val dateSearchQuery: StateFlow<String> = _dateSearchQuery
+
+    fun setDateSearchQuery(query: String) {
+        _dateSearchQuery.value = query
+    }
+
+    val previousDaysSummaries: StateFlow<List<DailySummary>> = combine(
+        allDailySummaries,
+        _dateSearchQuery
+    ) { summaries, query ->
+        val todayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            .format(java.util.Date(startOfToday()))
+        val previousDays = summaries.filter { it.day != todayKey }
+        if (query.isBlank()) {
+            previousDays
+        } else {
+            previousDays.filter { it.day.contains(query) || formatDisplayDate(it.day).contains(query) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val soldProductsSummary: StateFlow<List<SoldProductSummary>> = saleDao.getSoldProductsSummary()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private fun formatDisplayDate(isoDate: String): String {
+        return try {
+            val parser = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val display = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            display.format(parser.parse(isoDate) ?: return isoDate)
+        } catch (e: Exception) {
+            isoDate
+        }
+    }
+
     fun addToCart(product: Product, quantity: Int) {
         if (quantity <= 0) return
         val current = _cart.value.toMutableList()
