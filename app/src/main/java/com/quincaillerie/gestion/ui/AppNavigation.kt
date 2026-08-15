@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.layout.padding
 import com.quincaillerie.gestion.ui.screens.DashboardScreen
 import com.quincaillerie.gestion.ui.screens.ProductListScreen
 import com.quincaillerie.gestion.ui.screens.SaleScreen
